@@ -1,0 +1,13 @@
+fastapi[standard]>=0.116.1           # latest release trên PyPI (Jul 11, 2025) :contentReference[oaicite:1]{index=1}
+uvicorn>=0.35.0            # latest release (Jun 28, 2025) :contentReference[oaicite:2]{index=2}
+sqlalchemy>=2.0.41         # latest 2.x release (May 14, 2025) :contentReference[oaicite:3]{index=3}
+psycopg2-binary>=2.9.10    # latest (Oct 16, 2024) :contentReference[oaicite:4]{index=4}
+alembic>=1.16.4            # latest (Jul 10, 2025) :contentReference[oaicite:5]{index=5}
+python-jose[cryptography]>=3.5.0  # latest (May 28, 2025) :contentReference[oaicite:6]{index=6}
+passlib[bcrypt]>=1.7.4      # latest (May 28, 2025) :contentReference[oaicite:7]{index=7}
+python-dotenv>=1.1.1       # latest (Jun 24, 2025) :contentReference[oaicite:8]{index=8}
+pydantic>=2.9.2            # latest (Jul 10, 2025) :contentReference[oaicite:9]{index=9}
+pydantic_settings>=0.3.0     # latest (Jul 10, 2025) :contentReference[oaicite:10]{index=10}
+httpx>=0.27.0               # latest (Jul 10, 2025
+requests>=2.32.0            # latest (Jul 10, 2025) :contentReference[oaicite:11]{index=11}
+google-auth>=2.28.0         # latest (Jul 10, 2025) :contentReference[oaicite:12]{index=12}
