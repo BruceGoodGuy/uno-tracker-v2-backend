@@ -1,5 +1,6 @@
 fastapi[standard]>=0.116.1           # latest release trên PyPI (Jul 11, 2025) :contentReference[oaicite:1]{index=1}
 uvicorn>=0.35.0            # latest release (Jun 28, 2025) :contentReference[oaicite:2]{index=2}
+gunicorn>=21.2.0           # WSGI server for production
 sqlalchemy>=2.0.41         # latest 2.x release (May 14, 2025) :contentReference[oaicite:3]{index=3}
 psycopg2-binary>=2.9.10    # latest (Oct 16, 2024) :contentReference[oaicite:4]{index=4}
 alembic>=1.16.4            # latest (Jul 10, 2025) :contentReference[oaicite:5]{index=5}
