@@ -3,6 +3,7 @@ from src.auth.router import router as auth_router
 from src.core.database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
+from src.game.router import router as game_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -19,3 +20,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth_router)
+app.include_router(game_router)

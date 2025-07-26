@@ -14,6 +14,7 @@ def get_db():
 
 def get_token_cookie(session_token: str | None = Cookie(default=None)):
     print(f"Session token from cookie: {session_token}")
+    # session_token = "n8khfyIjqmYVuBLRJOh4HxtzXogbIpdfBjX0RvuFFGs"
     if not session_token:
         raise HTTPException(status_code=401, detail="Missing session cookie")
     return session_token
