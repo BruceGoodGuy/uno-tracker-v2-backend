@@ -28,25 +28,25 @@ class Player(BaseModel):
         return value
 
 
-# class Game(BaseModel):
-#     id: str = Field(..., description="Unique identifier for the game")
-#     name: str = Field(..., min_length=3, max_length=50, description="Name of the game")
-#     players: List[Player] = Field(..., description="List of players in the game")
-#     created_at: Optional[str] = Field(None, description="Timestamp when the game was created")
-#     updated_at: Optional[str] = Field(None, description="Timestamp when the game was last updated")
-#     state: str = Field(..., description="Current state of the game (e.g., 'waiting', 'in_progress', 'finished')")
-#     scoring_rules: int = Field(..., description="Scoring rules for the game (e.g., 0 winner takes all points)")
-
-# class GameEndCondition(BaseModel):
-#     id: str = Field(..., description="Unique identifier for the game end condition")
-#     game_id: str = Field(..., description="ID of the game this condition belongs to")
-#     condition: int = Field(..., description="Condition to be met for the game to end (e.g., number of rounds) 0 means player reaches target score, 1 maximum rounds reached and 2 means time limit reached")
-#     score: Optional[int] = Field(None, description="Target score to be reached for the game to end, if applicable")
-#     rounds: Optional[int] = Field(None, description="Maximum number of rounds to be played before the game ends, if applicable")
-#     time: Optional[int] = Field(None, description="Time limit in seconds for the game to end, if applicable")
-
-# class GameDetails(BaseModel):
-#     game: Game = Field(..., description="Details of the game")
-#     current_player: Player = Field(..., description="The player whose turn it is currently")
-#     deck: List[str] = Field(..., description="List of cards in the deck")
-#     discard_pile: List[str] = Field(..., description="List of cards in the discard pile")
+class Game(BaseModel):
+    name: str = Field(min_length=3, max_length=200, description="Name of the game")
+    player_group: Optional[str] = Field(
+        None, max_length=50, description="Group of players for the game"
+    )
+    end_condition: str = Field(
+        "score",
+        description="Condition to end the game (allowed: 'score', 'rounds', 'time')",
+    )
+    score_to_win: Optional[int] = Field(
+        500, ge=0, description="Score required to win the game"
+    )
+    max_rounds: Optional[int] = Field(
+        10, ge=1, description="Maximum number of rounds in the game"
+    )
+    time_limit: Optional[int] = Field(
+        120, ge=0, description="Time limit in seconds for the game"
+    )
+    game_players: List[str] = Field(
+        min_items=2,
+        description="List of player IDs participating in the game",
+    )
