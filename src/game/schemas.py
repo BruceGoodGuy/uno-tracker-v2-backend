@@ -3,6 +3,31 @@ from typing import List, Optional
 from datetime import datetime
 
 
+class PlayerStatus(BaseModel):
+    player_id: str = Field(description="ID of the player")
+    game_id: str = Field(description="ID of the game")
+    status: str = Field(
+        "active",
+        description="Status of the player (allowed: 'active', 'disabled', 'deleted')",
+    )
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_status
+
+    @staticmethod
+    def validate_status(value):
+        allowed = {"active", "disabled", "deleted"}
+        if value not in allowed:
+            raise ValueError(f"status must be one of {allowed}")
+        return value
+
+
+class PlayerWinner(BaseModel):
+    player_id: str = Field(description="ID of the player")
+    game_id: str = Field(description="ID of the game")
+
+
 class Player(BaseModel):
     name: str = Field(min_length=3, max_length=20, description="Name of the player")
     avatar: str = Field(description="Avatar string for the player")
@@ -50,3 +75,10 @@ class Game(BaseModel):
         min_items=2,
         description="List of player IDs participating in the game",
     )
+
+class AddPlayerToGame(BaseModel):
+    game_players: List[str] = Field(
+        min_items=1,
+        description="List of player IDs to be added to the game",
+    )
+    game_id: str = Field(description="ID of the game")

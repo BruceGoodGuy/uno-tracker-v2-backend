@@ -122,3 +122,26 @@ class GameLog(Base):
     created_by = Column(
         UUID(as_uuid=True), nullable=True
     )  # User who performed the action
+
+
+class GameMatch(Base):
+    __tablename__ = "game_matches"
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        index=True,
+    )
+    game_id = Column(UUID(as_uuid=True), nullable=False)
+    round = Column(Integer, nullable=False)
+    winner_id = Column(UUID(as_uuid=True), nullable=True)
+    score = Column(Integer, default=0, nullable=True)
+    details = Column(Text, nullable=True)  # JSON string or text for match details
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow,
+        nullable=False,
+    )
