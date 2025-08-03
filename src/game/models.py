@@ -145,3 +145,24 @@ class GameMatch(Base):
         onupdate=datetime.datetime.utcnow,
         nullable=False,
     )
+
+
+class Winner(Base):
+    __tablename__ = "winners"
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        index=True,
+    )
+    game_id = Column(UUID(as_uuid=True), nullable=False)
+    player_id = Column(UUID(as_uuid=True), nullable=False)
+    score = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow,
+        nullable=False,
+    )

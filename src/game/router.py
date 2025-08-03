@@ -1,3 +1,4 @@
+from itertools import count
 from fastapi import APIRouter, Depends, Response, HTTPException
 from sqlalchemy.orm import Session
 from src.auth import service, schemas
@@ -17,6 +18,8 @@ from fastapi import Query
 from typing import Annotated
 from fastapi import Form
 from sqlalchemy.dialects import postgresql
+from sqlalchemy import func
+import json
 
 
 router = APIRouter(prefix="/game", tags=["game"])
@@ -470,13 +473,67 @@ def add_winner(
         .count()
     )
 
+    # create detail data
+    game_players = (
+        db.query(
+            player_models.GamePlayer.player_id,
+            player_models.GamePlayer.status,
+            player_models.GamePlayer.score,
+            player_models.Player.name,
+        )
+        .join(
+            player_models.Player,
+            player_models.GamePlayer.player_id == player_models.Player.id,
+        )
+        .filter(player_models.GamePlayer.game_id == data.game_id)
+        .all()
+    )
+
+    previous_match = (
+        db.query(GameMatch.created_at)
+        .filter(GameMatch.game_id == data.game_id)
+        .order_by(GameMatch.round.desc())
+        .first()
+    )
+    if not previous_match:
+        previous_match_time = (
+            db.query(Game.created_at).filter(Game.id == data.game_id).first()
+        )
+        previous_match_time = (
+            previous_match_time.created_at if previous_match_time else datetime.utcnow()
+        )
+    else:
+        previous_match_time = previous_match.created_at
+
+    end_time = datetime.utcnow()
+    game_details = []
+    for player in game_players:
+        game_details.append(
+            {
+                "name": player.name,
+                "start_time": (
+                    previous_match_time.isoformat() if previous_match_time else None
+                ),
+                "end_time": end_time.isoformat() if end_time else None,
+                "status": player.status,
+                "score": player.score,
+                "is_winner": player.player_id == winner.Player.id,
+                "score_added": (
+                    add_score
+                    if player.player_id == winner.Player.id
+                    else (-1 if player.status == "active" else 0)
+                ),
+            }
+        )
+
     # Create a new GameMatch entry
     game_match = GameMatch(
         game_id=data.game_id,
         round=game_match_count + 1,  # Assuming this is the first round for the match
         winner_id=winner.Player.id,
         score=add_score,
-        details=f"Winner: {winner.Player.name}, Score: {score}",
+        details=json.dumps(game_details),
+        created_at=end_time,
     )
     db.add(game_match)
     db.commit()
@@ -515,6 +572,7 @@ def get_available_players(
             player_models.Player.status == "active",
             player_models.Player.player_group == user_group,
         )
+        .distinct(player_models.Player.id)
         .all()
     )
 
@@ -588,4 +646,225 @@ def add_player_to_game(
 
     return {
         "message": "Players added to the game successfully",
+    }
+
+
+@router.post("/ongoing/end")
+def end_ongoing_game(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_group = "usergroup_" + str(user.id)
+
+    ongoing_game = (
+        db.query(player_models.Game)
+        .filter(
+            player_models.Game.player_group == user_group,
+            player_models.Game.status == "ongoing",
+        )
+        .first()
+    )
+
+    if not ongoing_game:
+        raise HTTPException(status_code=404, detail=[{"msg": "No ongoing game found"}])
+
+    # We can have many winners, so we will get the top players based on their scores.
+    winners = (
+        db.query(player_models.GamePlayer.player_id, player_models.GamePlayer.score)
+        .filter(
+            player_models.GamePlayer.game_id == ongoing_game.id,
+        )
+        .order_by(player_models.GamePlayer.score.desc())
+        .all()
+    )
+
+    if not winners:
+        raise HTTPException(
+            status_code=404, detail=[{"msg": "No players found in the game"}]
+        )
+
+    winner_score = winners[0].score
+    for winner in winners:
+        if winner.score < winner_score:
+            continue
+        new_winner = player_models.Winner(
+            game_id=ongoing_game.id,
+            player_id=winner.player_id,
+            score=winner_score,
+        )
+        db.add(new_winner)
+        db.commit()
+
+    ongoing_game.status = "completed"
+    ongoing_game.end_time = datetime.utcnow()
+    db.commit()
+
+    return {"message": "Game ended successfully", "game_id": ongoing_game.id}
+
+
+@router.get("/history/{game_id}")
+def get_game_history(
+    game_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    user_group = "usergroup_" + str(user.id)
+
+    game = (
+        db.query(player_models.Game)
+        .filter(
+            player_models.Game.id == game_id,
+            player_models.Game.player_group == user_group,
+        )
+        .first()
+    )
+
+    if not game:
+        raise HTTPException(status_code=404, detail=[{"msg": "Game not found"}])
+
+    matches = (
+        db.query(
+            player_models.GameMatch,
+            player_models.Player.name,
+            player_models.GameMatch.round,
+            player_models.GameMatch.winner_id,
+            player_models.GameMatch.score,
+            player_models.GameMatch.details,
+            player_models.GameMatch.created_at,
+        )
+        .filter(player_models.GameMatch.game_id == game_id)
+        .join(
+            player_models.Player,
+            player_models.GameMatch.winner_id == player_models.Player.id,
+        )
+        .order_by(player_models.GameMatch.round.asc())
+        .all()
+    )
+
+    players = (
+        db.query(player_models.GamePlayer, player_models.Player.name)
+        .join(
+            player_models.Player,
+            player_models.GamePlayer.player_id == player_models.Player.id,
+        )
+        .filter(
+            player_models.GamePlayer.game_id == game_id,
+            player_models.Player.player_group == user_group,
+        )
+        .all()
+    )
+
+    winners = (
+        db.query(player_models.Winner, player_models.Player.name)
+        .join(
+            player_models.Player,
+            player_models.Winner.player_id == player_models.Player.id,
+        )
+        .filter(
+            player_models.Winner.game_id == game_id,
+            player_models.Player.player_group == user_group,
+        )
+        .all()
+    )
+
+    return {
+        "game": {
+            "id": game.id,
+            "name": game.name,
+            "status": game.status,
+            "start_time": game.start_time.isoformat() if game.start_time else None,
+            "end_time": game.end_time.isoformat() if game.end_time else None,
+            "end_condition": game.end_condition,
+            "score_to_win": game.score_to_win,
+            "max_rounds": game.max_rounds,
+            "time_limit": game.time_limit,
+        },
+        "matches": [
+            {
+                "round": match.round,
+                "player_name": match.name,
+                "winner_id": match.winner_id,
+                "score": match.score,
+                "details": json.loads(match.details),
+                "created_at": match.created_at.isoformat(),
+            }
+            for match in matches
+        ],
+        "players": [
+            {
+                "player_id": player.GamePlayer.player_id,
+                "name": player.name,
+            }
+            for player in players
+        ],
+        "winners": [
+            {
+                "player_id": winner.Winner.player_id,
+                "name": winner.name,
+            }
+            for winner in winners
+        ],
+    }
+
+
+@router.get("/recent")
+def get_all_game_history(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    user_group = "usergroup_" + str(user.id)
+
+    games = (
+        db.query(
+            player_models.Game,
+            func.count(player_models.GamePlayer.id).label("player_count"),
+        )
+        .filter(player_models.Game.player_group == user_group)
+        .join(
+            player_models.GamePlayer,
+            player_models.Game.id == player_models.GamePlayer.game_id,
+        )
+        .group_by(player_models.Game.id)
+        .order_by(player_models.Game.start_time.desc())
+        .all()
+    )
+
+    print(games)
+
+    if not games:
+        raise HTTPException(status_code=404, detail=[{"msg": "No game history found"}])
+
+    return {
+        "games": [
+            {
+                "id": game.id,
+                "name": game.name,
+                "status": game.status,
+                "start_time": game.start_time.isoformat() if game.start_time else None,
+                "end_condition": game.end_condition,
+                "score_to_win": game.score_to_win,
+                "max_rounds": game.max_rounds,
+                "time_limit": game.time_limit,
+                "player_count": player_count,
+                "end_time": game.end_time.isoformat() if game.end_time else None,
+                "winner": [
+                    {
+                        "player_id": winner.player_id,
+                        "player_name": winner.name,
+                    }
+                    for winner in db.query(
+                        player_models.Winner,
+                        player_models.Player.name,
+                        player_models.Winner.player_id,
+                    )
+                    .filter(player_models.Winner.game_id == game.id)
+                    .join(
+                        player_models.Player,
+                        player_models.Winner.player_id == player_models.Player.id,
+                    )
+                    .all()
+                ],
+            }
+            for game, player_count in games
+        ]
     }
