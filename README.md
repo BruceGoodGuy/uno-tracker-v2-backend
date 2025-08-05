@@ -11,7 +11,7 @@ Backend API for the Uno Tracker application - A FastAPI-based REST API that hand
 
 ## ✨ Features
 
-- 🔐 **JWT Authentication** - Secure user authentication with access/refresh tokens
+- 🔐 **JWT Authentication** - Secure user authentication with access tokens
 - 👤 **OAuth Integration** - Google OAuth support for easy sign-in
 - 🎮 **Game Management** - Create, join, and manage Uno game sessions
 - 📊 **Score Tracking** - Real-time score updates and game history
@@ -154,49 +154,6 @@ Once the server is running, you can access:
 - **ReDoc**: `http://localhost:8000/redoc`
 - **OpenAPI JSON**: `http://localhost:8000/openapi.json`
 
-## 🗄️ Database Schema
-
-### Users Table
-- `id` (UUID, Primary Key)
-- `email` (String, Unique)
-- `username` (String, Unique)
-- `hashed_password` (String)
-- `is_active` (Boolean)
-- `created_at` (DateTime)
-- `updated_at` (DateTime)
-
-### Games Table (Coming Soon)
-- `id` (UUID, Primary Key)
-- `name` (String)
-- `created_by` (UUID, Foreign Key)
-- `status` (Enum: active, completed, paused)
-- `created_at` (DateTime)
-- `updated_at` (DateTime)
-
-## 🧪 Testing
-
-```bash
-# Run tests (when implemented)
-pytest
-
-# Run with coverage
-pytest --cov=src
-```
-
-## 🚀 Deployment
-
-### Using Docker (Recommended)
-
-1. Build the image:
-```bash
-docker build -t uno-tracker-backend .
-```
-
-2. Run with docker-compose:
-```bash
-docker-compose up -d
-```
-
 ### Manual Deployment
 
 1. Set environment variables for production
@@ -219,13 +176,12 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 - [x] JWT Authentication system
 - [x] Google OAuth integration
 - [x] Database models and migrations
-- [ ] Complete game management endpoints
+- [x] Complete game management endpoints
 - [ ] Real-time score tracking
-- [ ] User profile management
+- [x] User profile management
 - [ ] Game statistics and analytics
 - [ ] WebSocket support for live updates
 - [ ] API rate limiting
-- [ ] Comprehensive test suite
 - [ ] Docker containerization
 - [ ] CI/CD pipeline
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from src.auth import service, schemas
 from src.core.database import SessionLocal
 from fastapi.responses import RedirectResponse
-from datetime import datetime
+from datetime import datetime, timezone
 from src.core.database import SessionLocal
 from src.dependencies import get_token_cookie, get_current_user
 from src.core.config import settings
@@ -20,7 +20,6 @@ from fastapi import Form
 from sqlalchemy.dialects import postgresql
 from sqlalchemy import func
 import json
-
 
 router = APIRouter(prefix="/game", tags=["game"])
 
@@ -219,7 +218,7 @@ def create_game(
         "time_limit": data.time_limit,
         "player_group": user_group,
         "status": "ongoing",
-        "start_time": datetime.utcnow(),
+        "start_time": datetime.now(timezone.utc),
     }
 
     game = player_models.Game(**game_data)
@@ -500,12 +499,17 @@ def add_winner(
             db.query(Game.created_at).filter(Game.id == data.game_id).first()
         )
         previous_match_time = (
-            previous_match_time.created_at if previous_match_time else datetime.utcnow()
+            previous_match_time.created_at.replace(tzinfo=timezone.utc) if previous_match_time else datetime.now(timezone.utc)
         )
     else:
-        previous_match_time = previous_match.created_at
+        if previous_match.created_at.tzinfo is None:
+            created_at_utc = previous_match.created_at.replace(tzinfo=timezone.utc)
+        else:
+            created_at_utc = previous_match.created_at
 
-    end_time = datetime.utcnow()
+        previous_match_time = created_at_utc
+
+    end_time = datetime.now(timezone.utc)
     game_details = []
     for player in game_players:
         game_details.append(
@@ -696,7 +700,7 @@ def end_ongoing_game(
         db.commit()
 
     ongoing_game.status = "completed"
-    ongoing_game.end_time = datetime.utcnow()
+    ongoing_game.end_time = datetime.now(timezone.utc)
     db.commit()
 
     return {"message": "Game ended successfully", "game_id": ongoing_game.id}
