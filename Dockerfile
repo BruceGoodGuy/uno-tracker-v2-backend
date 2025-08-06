@@ -9,14 +9,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install minimal runtime dependencies.
+# For production we only need the PostgreSQL client library (libpq5) to use the
+# pre‑built psycopg2-binary wheels, and curl to perform health checks.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
+        libpq5 \
         curl \
-        netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
@@ -42,5 +43,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/docs || exit 1
 
-# Default command
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the FastAPI application using Gunicorn with Uvicorn workers.
+# Gunicorn is a production-grade HTTP server that can spawn multiple worker
+# processes, and the uvicorn worker class runs the ASGI application.
+CMD ["gunicorn", "src.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-"]
+
