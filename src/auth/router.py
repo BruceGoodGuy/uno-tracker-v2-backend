@@ -44,6 +44,8 @@ def callback(code: str, response: Response, db: Session = Depends(get_db)):
     redirect = RedirectResponse(
         url=settings.FRONTEND_URL_DEV + "/callback-success", status_code=303
     )
+    xxx = settings.FRONTEND_URL_DEV + "/callback-success"
+    print(f"redirect link: {xxx}")
     redirect.set_cookie(
         key="session_token",
         value=token,
