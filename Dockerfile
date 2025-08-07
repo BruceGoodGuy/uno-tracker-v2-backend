@@ -18,7 +18,6 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
 
@@ -46,5 +45,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Start the FastAPI application using Gunicorn with Uvicorn workers.
 # Gunicorn is a production-grade HTTP server that can spawn multiple worker
 # processes, and the uvicorn worker class runs the ASGI application.
-CMD ["gunicorn", "src.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-"]
-
+# Introduce a short delay so that the database has time to accept connections
+# before the application starts. Without this delay, psycopg2 may raise
+# connection errors when the DB container is still starting up.
+CMD ["sh", "-c", "sleep 5 && gunicorn src.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -"]
