@@ -42,7 +42,7 @@ def callback(code: str, response: Response, db: Session = Depends(get_db)):
     user = service.get_or_create_user(db, info)
     token = service.create_session(db, user)
     redirect = RedirectResponse(
-        url=settings.FRONTEND_URL_DEV + "/auth/callback-success", status_code=303
+        url=settings.FRONTEND_URL_DEV + "/callback-success", status_code=303
     )
     redirect.set_cookie(
         key="session_token",
