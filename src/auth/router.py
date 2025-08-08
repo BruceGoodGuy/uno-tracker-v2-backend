@@ -22,7 +22,9 @@ def get_db():
     finally:
         db.close()
 
+
 BACKEND_URL = settings.BACKEND_URL
+
 
 @router.get("/login")
 def login():
@@ -36,9 +38,7 @@ def login():
 
 @router.get("/callback", response_model=schemas.UserOut)
 def callback(code: str, response: Response, db: Session = Depends(get_db)):
-    info = service.exchange_code(
-        code, redirect_uri=f"{BACKEND_URL}/auth/callback"
-    )
+    info = service.exchange_code(code, redirect_uri=f"{BACKEND_URL}/auth/callback")
     user = service.get_or_create_user(db, info)
     token = service.create_session(db, user)
     redirect = RedirectResponse(
@@ -51,6 +51,7 @@ def callback(code: str, response: Response, db: Session = Depends(get_db)):
         secure=service.settings.COOKIE_SECURE,
         samesite="lax",
         max_age=30 * 24 * 3600,
+        domain=".railway.app",
         path="/",
     )
 
@@ -71,6 +72,7 @@ def logout(
         key="session_token",
         path="/",
         httponly=True,
+        domain=".railway.app",
         samesite="lax",
         secure=False,
     )
