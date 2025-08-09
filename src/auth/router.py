@@ -48,10 +48,10 @@ def callback(code: str, response: Response, db: Session = Depends(get_db)):
         key="session_token",
         value=token,
         httponly=True,
-        secure=service.settings.COOKIE_SECURE,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=30 * 24 * 3600,
-        domain=".railway.app",
+        domain=".up.railway.app",
         path="/",
     )
 
@@ -72,9 +72,9 @@ def logout(
         key="session_token",
         path="/",
         httponly=True,
-        domain=".railway.app",
-        samesite="lax",
-        secure=False,
+        domain=".up.railway.app",
+        samesite="none",
+        secure=True,
     )
     return {"message": "Logged out"}
 
